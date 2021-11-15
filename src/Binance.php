@@ -1,12 +1,12 @@
 <?php declare(strict_types=1);
 
-namespace Lavrenov\ExchangeAPI\Binance;
+namespace Lavrenov\ExchangeAPI;
 
 use Exception;
 use JsonException;
 use Lavrenov\ExchangeAPI\Base\Exchange;
 
-class API extends Exchange
+class Binance extends Exchange
 {
     protected const API_URL = 'https://api.binance.com/api/v3/';
 

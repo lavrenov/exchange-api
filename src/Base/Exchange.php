@@ -40,7 +40,7 @@ class Exchange extends Singleton
 
             $response = $this->doRequest($uri, $options);
         } catch (TransferException $e) {
-            $message = 'API is not available. ' . $e->getMessage();
+            $message = 'Binance is not available. ' . $e->getMessage();
             throw new Exception($message, $e->getCode(), $e);
         }
 
