@@ -1,0 +1,52 @@
+version-template: $MAJOR.$MINOR.$PATCH
+name-template: v$RESOLVED_VERSION
+tag-template: v$RESOLVED_VERSION
+
+categories:
+  - title: Features
+    labels:
+      - feature
+      - enhancement
+      - source
+  - title: Bug Fixes
+    labels:
+      - fix
+      - bugfix
+      - bug
+      - hotfix
+      - dependencies
+  - title: Maintenance
+    labels:
+      - build
+      - documentation
+      - refactoring
+      - tests
+
+change-title-escapes: \<*_&
+
+version-resolver:
+  major:
+    labels:
+      - major
+      - refactoring
+  minor:
+    labels:
+      - feature
+      - minor
+      - source
+  patch:
+    labels:
+      - build
+      - documentation
+      - tests
+      - patch
+      - bug
+      - bugfix
+      - hotfix
+      - fix
+  default: patch
+
+template: |
+  # What’s changed
+
+  $CHANGES

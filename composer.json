@@ -1,0 +1,30 @@
+{
+    "name": "lavrenov/exchange-api",
+    "description": "Exchange API client",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "EvgenyLavr",
+            "email": "lion06@inbox.ru"
+        }
+    ],
+    "require": {
+        "php": "^7.3.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "9",
+        "umbrellio/code-style-php": "^1.2",
+        "symplify/easy-coding-standard": "^9.3"
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "Lavrenov\\ExchangeAPI\\": "src/"
+        }
+    },
+    "scripts": {
+        "lint": "vendor/bin/ecs check --config=ecs.php src",
+        "lint-fix": "vendor/bin/ecs check --config=ecs.php src --fix"
+    }
+}

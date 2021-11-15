@@ -1,0 +1,19 @@
+build:
+  - .github/**/*
+  - .gitignore
+  - ecs.php
+
+dependencies:
+  - composer.json
+  - composer.lock
+
+source:
+  - src/**/*
+
+tests:
+  - tests/**/*
+  - phpunit.xml
+
+documentation:
+  - README.md
+  - LICENSE.md

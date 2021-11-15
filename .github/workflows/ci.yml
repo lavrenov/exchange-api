@@ -1,0 +1,107 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - edited
+      - synchronize
+
+jobs:
+  lint:
+    runs-on: ${{ matrix.operating_system }}
+    strategy:
+      matrix:
+        operating_system: [ubuntu-latest]
+        php_versions: [7.3]
+      fail-fast: false
+    name: Lint PHP
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php_versions }}
+          ini-values: memory_limit=-1
+          tools: composer
+          coverage: none
+
+      - name: Validate composer.json and composer.lock
+        run: composer validate
+
+      - name: Install PHP dependencies with Composer
+        run: composer install --prefer-dist --no-progress --no-suggest --optimize-autoloader
+
+      - name: Linting PHP source files
+        run: composer lint
+
+  test:
+    runs-on: ${{ matrix.operating_system }}
+    strategy:
+      matrix:
+        operating_system: [ubuntu-latest]
+        php_versions: [7.3, 7.4]
+      fail-fast: false
+    name: Test / PHP ${{ matrix.php_versions }}
+    needs:
+      - lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup PHP with PCOV
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php_versions }}
+          ini-values: pcov.directory=src
+          tools: composer
+          coverage: pcov
+
+      - name: Install PHP dependencies with Composer
+        run: composer install --prefer-dist --no-progress --no-suggest --optimize-autoloader
+
+      - name: Run tests
+        run: |
+          vendor/bin/phpunit --verbose --stderr --coverage-clover build/logs/coverage.xml
+
+          REF=${{ github.ref }}
+          IFS='/' read -ra PATHS <<< "$REF"
+          BRANCH_NAME="${PATHS[1]}_${PATHS[2]}"
+          echo "BRANCH=$(echo ${BRANCH_NAME})" >> $GITHUB_ENV
+
+          REPOSITORY=${{ github.repository }}
+          IFS='/' read -ra PATHS <<< "$REPOSITORY"
+          REPO_NAME="${PATHS[1]}"
+          echo "REPO=$(echo ${REPO_NAME})" >> $GITHUB_ENV
+
+      - name: Check test coverage
+        uses: johanvanhelden/gha-clover-test-coverage-check@v1
+        id: coverage
+        with:
+          percentage: 60
+          filename: build/logs/coverage.xml
+
+      - name: Create the badge
+        uses: schneegans/dynamic-badges-action@v1.0.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: dc7837b18deb4357783fa04cab9ba719
+          filename: ${{ env.REPO }}__${{ env.BRANCH }}.json
+          label: coverage
+          message: ${{ steps.coverage.outputs.coverage-rounded }}%
+          color: ${{
+            steps.coverage.outputs.coverage > 90 && 'green' ||
+            steps.coverage.outputs.coverage > 80 && 'yellow' ||
+            steps.coverage.outputs.coverage > 70 && 'yellow' ||
+            steps.coverage.outputs.coverage > 60 && 'orange' ||
+            steps.coverage.outputs.coverage > 50 && 'orange' ||
+            steps.coverage.outputs.coverage > 40 && 'red' ||
+            steps.coverage.outputs.coverage > 30 && 'red' ||
+            steps.coverage.outputs.coverage > 20 && 'red' ||
+            'red' }}

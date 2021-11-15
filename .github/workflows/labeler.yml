@@ -1,0 +1,15 @@
+name: Pull request labeler
+
+on:
+  - pull_request_target
+
+jobs:
+  triage:
+    name: Checking for labels
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/labeler@main
+        with:
+          repo-token: ${{ secrets.TOKEN }}
+          sync-labels: true
+          configuration-path: .github/labeler.config.yml
