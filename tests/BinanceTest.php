@@ -7,9 +7,9 @@ use PHPUnit\Framework\TestCase;
 class BinanceTest extends TestCase
 {
     /**
-     * @throws GuzzleException
+     * @throws GuzzleException|JsonException
      */
-    public function testExchangeInfo(): void
+    public function testSuccessfulExchangeInfo(): void
     {
         $binance = API::getInstance();
         $exchangeInfo = $binance->getExchangeInfo();
