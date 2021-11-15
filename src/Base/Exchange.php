@@ -4,13 +4,19 @@ namespace Lavrenov\ExchangeAPI\Base;
 
 use Exception;
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\TransferException;
 use Psr\Http\Message\ResponseInterface;
 
 class Exchange extends Singleton
 {
     protected const API_URL = '';
+
+    /* @var Client */
     private $client;
+
+    /* @var ResponseInterface */
+    private $lastResponse;
 
     public function init(): void
     {
@@ -29,7 +35,7 @@ class Exchange extends Singleton
      * @return string
      * @throws Exception
      */
-    public function request(string $relativeUri, array $params = []): string
+    protected function request(string $relativeUri, array $params = []): string
     {
         try {
             $uri = $relativeUri;
@@ -38,22 +44,34 @@ class Exchange extends Singleton
                 'query' => $params
             ];
 
-            $response = $this->doRequest($uri, $options);
+            $this->lastResponse = $this->doRequest($uri, $options);
         } catch (TransferException $e) {
-            $message = 'Binance is not available. ' . $e->getMessage();
+            $message = 'Exchange is not available. ' . $e->getMessage();
+            throw new Exception($message, $e->getCode(), $e);
+        } catch (GuzzleException $e) {
+            $message = $e->getMessage();
             throw new Exception($message, $e->getCode(), $e);
         }
 
-        return $response->getBody()->getContents();
+        return $this->lastResponse->getBody()->getContents();
     }
 
     /**
      * @param $uri
      * @param array $options
      * @return ResponseInterface
+     * @throws GuzzleException
      */
     protected function doRequest($uri, array $options): ResponseInterface
     {
         return $this->client->get($uri, $options);
+    }
+
+    /**
+     * @return ResponseInterface
+     */
+    public function getLastResponse(): ResponseInterface
+    {
+        return $this->lastResponse;
     }
 }
