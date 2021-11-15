@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         operating_system: [ubuntu-latest]
-        php_versions: [7.3]
+        php_versions: [7.3, 7.4]
       fail-fast: false
     name: Lint PHP
     steps:
