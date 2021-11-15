@@ -97,11 +97,7 @@ jobs:
           message: ${{ steps.coverage.outputs.coverage-rounded }}%
           color: ${{
             steps.coverage.outputs.coverage > 90 && 'green' ||
-            steps.coverage.outputs.coverage > 80 && 'yellow' ||
             steps.coverage.outputs.coverage > 70 && 'yellow' ||
-            steps.coverage.outputs.coverage > 60 && 'orange' ||
             steps.coverage.outputs.coverage > 50 && 'orange' ||
-            steps.coverage.outputs.coverage > 40 && 'red' ||
-            steps.coverage.outputs.coverage > 30 && 'red' ||
             steps.coverage.outputs.coverage > 20 && 'red' ||
             'red' }}
