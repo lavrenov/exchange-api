@@ -28,6 +28,6 @@
     "scripts": {
         "lint": "vendor/bin/ecs check --config=ecs.php src",
         "lint-fix": "vendor/bin/ecs check --config=ecs.php src --fix",
-        "code-coverage": "XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-html coverage"
+        "code-coverage": "XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-html tests/coverage"
     }
 }

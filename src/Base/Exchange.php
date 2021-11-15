@@ -29,7 +29,7 @@ class Exchange extends Singleton
      * @return string
      * @throws Exception
      */
-    protected function request(string $relativeUri, array $params = []): string
+    public function request(string $relativeUri, array $params = []): string
     {
         try {
             $uri = $relativeUri;
