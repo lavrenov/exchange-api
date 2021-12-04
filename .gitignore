@@ -11,4 +11,4 @@ tests/_output/*
 tests/_support/_generated
 tests/log
 build
-coverage
+tests/coverage

@@ -11,6 +11,10 @@ on:
       - edited
       - synchronize
 
+env:
+  API_KEY: ${{ secrets.API_KEY }}
+  SECRET: ${{ secrets.SECRET }}
+
 jobs:
   lint:
     runs-on: ${{ matrix.operating_system }}
