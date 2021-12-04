@@ -9,6 +9,7 @@ use Psr\Http\Message\ResponseInterface;
 class Exchange extends Singleton
 {
     protected const API_URL = '';
+    protected const FAPI_URL = '';
 
     /* @var Client */
     private $client;
