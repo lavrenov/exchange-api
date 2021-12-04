@@ -78,10 +78,10 @@ class Exchange extends Singleton
     }
 
     /**
-     * @return ResponseInterface
+     * @return ResponseInterface|null
      */
-    public function getLastResponse(): ResponseInterface
+    public function getLastResponse(): ?ResponseInterface
     {
-        return $this->lastResponse;
+        return $this->lastResponse ?? null;
     }
 }
