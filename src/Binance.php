@@ -30,8 +30,8 @@ class Binance extends Exchange
     public const TIMEFRAME_1w = '1w';
     public const TIMEFRAME_1M = '1M';
 
-    public static $apiKey = '';
-    public static $secret = '';
+    public static $apiKey;
+    public static $secret;
 
     public $subscriptions = [];
 

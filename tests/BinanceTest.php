@@ -11,7 +11,9 @@ class BinanceTest extends TestCase
     protected function setUp(): void
     {
         $this->binance = Binance::getInstance();
-        $this->binance->setToken(getenv('API_KEY'), getenv('SECRET'));
+        $apiKey = getenv('API_KEY') ?? '';
+        $secret = getenv('SECRET') ?? '';
+        $this->binance->setToken($apiKey, $secret);
     }
 
     /**
