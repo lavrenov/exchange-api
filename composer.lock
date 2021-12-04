@@ -2980,12 +2980,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/symplify/easy-coding-standard.git",
-                "reference": "13296f7b6072c5536a9cde298c698449ccbb5c88"
+                "reference": "e3391d598660f919888e96d3b52126c5743ee065"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symplify/easy-coding-standard/zipball/13296f7b6072c5536a9cde298c698449ccbb5c88",
-                "reference": "13296f7b6072c5536a9cde298c698449ccbb5c88",
+                "url": "https://api.github.com/repos/symplify/easy-coding-standard/zipball/e3391d598660f919888e96d3b52126c5743ee065",
+                "reference": "e3391d598660f919888e96d3b52126c5743ee065",
                 "shasum": ""
             },
             "require": {
