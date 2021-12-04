@@ -40,7 +40,13 @@ class Binance extends Exchange
      */
     public function getLimitUsedWeight(): int
     {
-        return (int)($this->getLastResponse()->getHeader('X-MBX-USED-WEIGHT-1M')[0] ?? '0');
+        $lastResponse = $this->getLastResponse();
+        $result = 0;
+        if ($lastResponse) {
+            $result = (int)($lastResponse->getHeader('X-MBX-USED-WEIGHT-1M')[0] ?? 0);
+        }
+
+        return $result;
     }
 
     /**
@@ -48,7 +54,13 @@ class Binance extends Exchange
      */
     public function getLimitOrderCount(): int
     {
-        return (int)($this->getLastResponse()->getHeader('X-MBX-ORDER-COUNT-10S')[0] ?? '0');
+        $lastResponse = $this->getLastResponse();
+        $result = 0;
+        if ($lastResponse) {
+            $result = (int)($lastResponse->getHeader('X-MBX-ORDER-COUNT-10S')[0] ?? 0);
+        }
+
+        return $result;
     }
 
     public function setToken($apiKey, $secret): void
@@ -144,7 +156,7 @@ class Binance extends Exchange
                     $ws->close();
                     return;
                 }
-                $data = json_decode($data, true, 512, JSON_THROW_ON_ERROR);
+                $data = json_decode((string)$data, true, 512, JSON_THROW_ON_ERROR);
                 if ($callback) {
                     $callback($symbol, $bars, $data);
                 }
