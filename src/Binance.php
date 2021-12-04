@@ -43,7 +43,7 @@ class Binance extends Exchange
         $lastResponse = $this->getLastResponse();
         $result = 0;
         if ($lastResponse) {
-            $result = (int)$lastResponse->getHeader('X-MBX-USED-WEIGHT-1M')[0];
+            $result = (int)($lastResponse->getHeader('X-MBX-USED-WEIGHT-1M')[0] ?? 0);
         }
 
         return $result;
@@ -57,7 +57,7 @@ class Binance extends Exchange
         $lastResponse = $this->getLastResponse();
         $result = 0;
         if ($lastResponse) {
-            $result = (int)$lastResponse->getHeader('X-MBX-ORDER-COUNT-10S')[0];
+            $result = (int)($lastResponse->getHeader('X-MBX-ORDER-COUNT-10S')[0] ?? 0);
         }
 
         return $result;
