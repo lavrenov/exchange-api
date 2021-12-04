@@ -2,10 +2,8 @@
 
 namespace Lavrenov\ExchangeAPI\Base;
 
-use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use GuzzleHttp\Exception\TransferException;
 use Psr\Http\Message\ResponseInterface;
 
 class Exchange extends Singleton
@@ -18,53 +16,64 @@ class Exchange extends Singleton
     /* @var ResponseInterface */
     private $lastResponse;
 
+    private $requestOptions = [];
+
     public function init(): void
     {
         parent::init();
 
         $options = [
-            'base_uri' => static::API_URL
+            'http_errors' => false,
         ];
 
         $this->client = new Client($options);
     }
 
     /**
-     * @param string $relativeUri
-     * @param array $params
-     * @return string
-     * @throws Exception
+     * @param $option
+     * @param $value
      */
-    protected function request(string $relativeUri, array $params = []): string
+    public function setRequestOption($option, $value): void
     {
-        try {
-            $uri = $relativeUri;
-
-            $options = [
-                'query' => $params
-            ];
-
-            $this->lastResponse = $this->doRequest($uri, $options);
-        } catch (TransferException $e) {
-            $message = 'Exchange is not available. ' . $e->getMessage();
-            throw new Exception($message, $e->getCode(), $e);
-        } catch (GuzzleException $e) {
-            $message = $e->getMessage();
-            throw new Exception($message, $e->getCode(), $e);
-        }
-
-        return $this->lastResponse->getBody()->getContents();
+        $this->requestOptions[$option] = $value;
     }
 
     /**
-     * @param $uri
-     * @param array $options
-     * @return ResponseInterface
+     * @param string $requestType
+     * @param string $relativeUri
+     * @param array $params
+     * @param bool $signed
+     * @return string
      * @throws GuzzleException
      */
-    protected function doRequest($uri, array $options): ResponseInterface
+    protected function request(string $requestType, string $relativeUri, array $params = [], bool $signed = false): string
     {
-        return $this->client->get($uri, $options);
+        $baseUri = static::API_URL;
+
+        if (isset($params['fapi'])) {
+            unset($params['fapi']);
+            $baseUri = static::FAPI_URL;
+        }
+
+        if ($signed) {
+            $params['timestamp'] = time() * 1000;
+            $params['signature'] = hash_hmac('sha256', http_build_query($params), static::$secret);
+            $this->setRequestOption('headers', ['X-MBX-APIKEY' => static::$apiKey]);
+        }
+
+        $uri = $baseUri . $relativeUri;
+
+        $options = [
+            'query' => $params
+        ];
+
+        if (!empty($this->requestOptions)) {
+            $options = array_merge($options, $this->requestOptions);
+        }
+
+        $this->lastResponse = $this->client->request($requestType, $uri, $options);
+
+        return $this->lastResponse->getBody()->getContents();
     }
 
     /**

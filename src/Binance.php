@@ -3,12 +3,16 @@
 namespace Lavrenov\ExchangeAPI;
 
 use Exception;
+use GuzzleHttp\Exception\GuzzleException;
 use JsonException;
 use Lavrenov\ExchangeAPI\Base\Exchange;
+use function Ratchet\Client\connect;
 
 class Binance extends Exchange
 {
     protected const API_URL = 'https://api.binance.com/api/v3/';
+    protected const FAPI_URL = 'https://fapi.binance.com/fapi/v1/';
+    protected const STREAM_API_URL = 'wss://stream.binance.com:9443/ws/';
 
     public const TIMEFRAME_1m = '1m';
     public const TIMEFRAME_3m = '3m';
@@ -26,6 +30,11 @@ class Binance extends Exchange
     public const TIMEFRAME_1w = '1w';
     public const TIMEFRAME_1M = '1M';
 
+    public static $apiKey;
+    public static $secret;
+
+    public $subscriptions = [];
+
     /**
      * @return int
      */
@@ -42,45 +51,104 @@ class Binance extends Exchange
         return (int)($this->getLastResponse()->getHeader('X-MBX-ORDER-COUNT-10S')[0] ?? '0');
     }
 
+    public function setToken($apiKey, $secret): void
+    {
+        self::$apiKey = $apiKey;
+        self::$secret = $secret;
+    }
+
     /**
-     * @throws JsonException
+     * @throws JsonException|Exception
      */
     private function parseResult($result)
     {
-        return json_decode($result, true, 512, JSON_THROW_ON_ERROR);
+        $code = $this->getLastResponse()->getStatusCode();
+
+        if ($code === 404) {
+            //@codeCoverageIgnoreStart
+            throw new Exception('Not Found', 404);
+            //@codeCoverageIgnoreEnd
+        }
+
+        $result = json_decode($result, true, 512, JSON_THROW_ON_ERROR);
+
+        if ($code >= 400) {
+            throw new Exception($result['msg'], $result['code']);
+        }
+
+        return $result;
     }
 
     /**
      * @return array
-     * @throws JsonException
-     * @throws Exception
+     * @throws GuzzleException|JsonException
      */
     public function getExchangeInfo(): array
     {
         $uri = 'exchangeInfo';
-        $result = $this->request($uri);
+        $result = $this->request('GET', $uri);
 
         return $this->parseResult($result);
     }
 
     /**
      * @param $symbol
-     * @param $interval
+     * @param $timeFrame
      * @param int $limit
      * @return array
-     * @throws JsonException
-     * @throws Exception
+     * @throws GuzzleException|JsonException
      */
-    public function getCandles($symbol, $interval, int $limit = 500): array
+    public function getCandles($symbol, $timeFrame, int $limit = 500): array
     {
         $uri = 'klines';
 
-        $result = $this->request($uri, [
+        $result = $this->request('GET', $uri, [
             'symbol' => $symbol,
-            'interval' => $interval,
+            'interval' => $timeFrame,
             'limit' => $limit,
         ]);
 
         return $this->parseResult($result);
+    }
+
+    /**
+     * @param array $params
+     * @return array
+     * @throws GuzzleException
+     * @throws JsonException
+     */
+    public function getAccount(array $params = []): array
+    {
+        $uri = 'account';
+
+        $result = $this->request('GET', $uri, $params, true);
+
+        return $this->parseResult($result);
+    }
+
+    /**
+     * @param $symbol
+     * @param $timeFrame
+     * @param $bars
+     * @param callable $callback
+     * @codeCoverageIgnore
+     */
+    public function candle($symbol, $timeFrame, $bars, callable $callback): void
+    {
+        $uri = strtolower($symbol) . '@kline_' . $timeFrame;
+
+        $this->subscriptions[$uri] = true;
+        connect(self::STREAM_API_URL . $uri)->then(function ($ws) use ($callback, $symbol, $bars, $uri) {
+            $ws->on('message', function ($data) use ($ws, $callback, $symbol, $bars, $uri) {
+                if ($this->subscriptions[$uri] === false) {
+                    $ws->close();
+                    return;
+                }
+                $data = json_decode($data, true, 512, JSON_THROW_ON_ERROR);
+                if ($callback) {
+                    $callback($symbol, $bars, $data);
+                }
+            });
+        });
     }
 }

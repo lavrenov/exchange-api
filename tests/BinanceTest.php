@@ -1,46 +1,75 @@
 <?php
 
+use GuzzleHttp\Exception\GuzzleException;
 use Lavrenov\ExchangeAPI\Binance;
 use PHPUnit\Framework\TestCase;
 
 class BinanceTest extends TestCase
 {
+    private $binance;
+
+    protected function setUp(): void
+    {
+        $this->binance = Binance::getInstance();
+        $this->binance->setToken(getenv('API_KEY'), getenv('SECRET'));
+    }
+
     /**
-     * @throws JsonException
+     * @throws GuzzleException|JsonException
      */
     public function testExchangeInfo(): void
     {
-        $binance = Binance::getInstance();
-        $exchangeInfo = $binance->getExchangeInfo();
+        $exchangeInfo = $this->binance->getExchangeInfo();
 
         self::assertIsArray($exchangeInfo);
         self::assertArrayHasKey('timezone', $exchangeInfo);
-        self::assertEquals(date('d.m.Y H:i'), date('d.m.Y H:i', $exchangeInfo['serverTime'] / 1000));
+        self::assertLessThanOrEqual(60, abs(time() - $exchangeInfo['serverTime'] / 1000));
     }
 
     /**
-     * @throws ReflectionException
-     */
-    public function testRequestException(): void
-    {
-        $binance = Binance::getInstance();
-
-        $class = new ReflectionClass(Binance::class);
-        $method = $class->getMethod('request');
-        $method->setAccessible(true);
-        $this->expectException(Exception::class);
-        $method->invokeArgs($binance, ['relativeUri' => 'wrongUrl']);
-    }
-
-    /**
-     * @throws JsonException
+     * @throws GuzzleException|JsonException
      */
     public function testCandles(): void
     {
-        $binance = Binance::getInstance();
-        $candles = $binance->getCandles('BTCUSDT', Binance::TIMEFRAME_1h);
+        $candles = $this->binance->getCandles('BTCUSDT', Binance::TIMEFRAME_1h);
 
         self::assertIsArray($candles);
         self::assertCount(500, $candles);
+    }
+
+    /**
+     * @throws GuzzleException|JsonException
+     */
+    public function testAccount(): void
+    {
+        $account = $this->binance->getAccount();
+
+        self::assertIsArray($account);
+        self::assertArrayHasKey('makerCommission', $account);
+
+        $account = $this->binance->getAccount(['fapi' => true]);
+
+        self::assertIsArray($account);
+        self::assertArrayHasKey('feeTier', $account);
+    }
+
+    public function testLimitUsedWeight(): void
+    {
+        self::assertIsInt($this->binance->getLimitUsedWeight());
+    }
+
+    public function testLimitOrderCount(): void
+    {
+        self::assertIsInt($this->binance->getLimitOrderCount());
+    }
+
+    /**
+     * @throws GuzzleException|JsonException
+     */
+    public function testWithoutApiKey(): void
+    {
+        $this->binance->setToken('', '');
+        $this->expectException(Exception::class);
+        $this->binance->getAccount();
     }
 }
