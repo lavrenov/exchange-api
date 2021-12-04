@@ -144,7 +144,7 @@ class Binance extends Exchange
                     $ws->close();
                     return;
                 }
-                $data = json_decode($data, true, 512, JSON_THROW_ON_ERROR);
+                $data = json_decode((string)$data, true, 512, JSON_THROW_ON_ERROR);
                 if ($callback) {
                     $callback($symbol, $bars, $data);
                 }
