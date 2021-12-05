@@ -3,7 +3,6 @@
 namespace Lavrenov\ExchangeAPI;
 
 use Exception;
-use GuzzleHttp\Exception\GuzzleException;
 use JsonException;
 use Lavrenov\ExchangeAPI\Base\Exchange;
 use function Ratchet\Client\connect;
@@ -70,11 +69,18 @@ class Binance extends Exchange
     }
 
     /**
-     * @throws JsonException|Exception
+     * @throws Exception
      */
     private function parseResult($result)
     {
-        $code = $this->getLastResponse()->getStatusCode();
+        $lastResponse = $this->getLastResponse();
+        if ($lastResponse === null) {
+            //@codeCoverageIgnoreStart
+            throw new Exception('Not Implemented', 501);
+            //@codeCoverageIgnoreEnd
+        }
+
+        $code = $lastResponse->getStatusCode();
 
         if ($code === 404) {
             //@codeCoverageIgnoreStart
@@ -82,7 +88,13 @@ class Binance extends Exchange
             //@codeCoverageIgnoreEnd
         }
 
-        $result = json_decode($result, true, 512, JSON_THROW_ON_ERROR);
+        try {
+            $result = json_decode($result, true, 512, JSON_THROW_ON_ERROR);
+            //@codeCoverageIgnoreStart
+        } catch (JsonException $e) {
+            throw new Exception('Not Implemented', 501);
+        }
+        //@codeCoverageIgnoreEnd
 
         if ($code >= 400) {
             throw new Exception($result['msg'], $result['code']);
@@ -92,13 +104,15 @@ class Binance extends Exchange
     }
 
     /**
+     * @param array $params
      * @return array
-     * @throws GuzzleException|JsonException
+     * @throws Exception
      */
-    public function getExchangeInfo(): array
+    public function getExchangeInfo(array $params = []): array
     {
         $uri = 'exchangeInfo';
-        $result = $this->request('GET', $uri);
+
+        $result = $this->request('GET', $uri, $params);
 
         return $this->parseResult($result);
     }
@@ -107,18 +121,21 @@ class Binance extends Exchange
      * @param $symbol
      * @param $timeFrame
      * @param int $limit
+     * @param array $params
      * @return array
-     * @throws GuzzleException|JsonException
+     * @throws Exception
      */
-    public function getCandles($symbol, $timeFrame, int $limit = 500): array
+    public function getCandles($symbol, $timeFrame, int $limit = 500, array $params = []): array
     {
         $uri = 'klines';
 
-        $result = $this->request('GET', $uri, [
+        $params = array_merge([
             'symbol' => $symbol,
             'interval' => $timeFrame,
             'limit' => $limit,
-        ]);
+        ], $params);
+
+        $result = $this->request('GET', $uri, $params);
 
         return $this->parseResult($result);
     }
@@ -126,8 +143,7 @@ class Binance extends Exchange
     /**
      * @param array $params
      * @return array
-     * @throws GuzzleException
-     * @throws JsonException
+     * @throws Exception
      */
     public function getAccount(array $params = []): array
     {

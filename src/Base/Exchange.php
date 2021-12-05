@@ -44,10 +44,9 @@ class Exchange extends Singleton
      * @param string $relativeUri
      * @param array $params
      * @param bool $signed
-     * @return string
-     * @throws GuzzleException
+     * @return string|null
      */
-    protected function request(string $requestType, string $relativeUri, array $params = [], bool $signed = false): string
+    protected function request(string $requestType, string $relativeUri, array $params = [], bool $signed = false): ?string
     {
         $baseUri = static::API_URL;
 
@@ -72,9 +71,16 @@ class Exchange extends Singleton
             $options = array_merge($options, $this->requestOptions);
         }
 
-        $this->lastResponse = $this->client->request($requestType, $uri, $options);
+        try {
+            $this->lastResponse = $this->client->request($requestType, $uri, $options);
+            $result = $this->lastResponse->getBody()->getContents();
+            //@codeCoverageIgnoreStart
+        } catch (GuzzleException $e) {
+            $result = null;
+        }
+        //@codeCoverageIgnoreEnd
 
-        return $this->lastResponse->getBody()->getContents();
+        return $result;
     }
 
     /**
