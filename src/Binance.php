@@ -76,7 +76,7 @@ class Binance extends Exchange
         $lastResponse = $this->getLastResponse();
         if ($lastResponse === null) {
             //@codeCoverageIgnoreStart
-            throw new Exception('Not Implemented', 501);
+            return null;
             //@codeCoverageIgnoreEnd
         }
 
@@ -92,7 +92,7 @@ class Binance extends Exchange
             $result = json_decode($result, true, 512, JSON_THROW_ON_ERROR);
             //@codeCoverageIgnoreStart
         } catch (JsonException $e) {
-            throw new Exception('Not Implemented', 501);
+            throw new Exception($e->getMessage(), $e->getCode());
         }
         //@codeCoverageIgnoreEnd
 
