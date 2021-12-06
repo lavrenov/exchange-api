@@ -7,6 +7,7 @@ use PHPUnit\Framework\TestCase;
 class BinanceTest extends TestCase
 {
     private $binance;
+	private $exchangeTypes = ['spot', 'future'];
 
     protected function setUp(): void
     {
@@ -27,15 +28,14 @@ class BinanceTest extends TestCase
      */
     public function testExchangeInfo(): void
     {
-        $exchangeInfo = $this->binance->getExchangeInfo(['api' => true]);
-        self::assertIsArray($exchangeInfo);
-        self::assertArrayHasKey('timezone', $exchangeInfo);
-        self::assertArrayHasKey('serverTime', $exchangeInfo);
-
-        $exchangeInfo = $this->binance->getExchangeInfo(['fapi' => true]);
-        self::assertIsArray($exchangeInfo);
-        self::assertArrayHasKey('timezone', $exchangeInfo);
-        self::assertArrayHasKey('serverTime', $exchangeInfo);
+		foreach ($this->exchangeTypes as $exchangeType) {
+        	$exchangeInfo = $this->binance->getExchangeInfo(['type' => $exchangeType]);
+        	self::assertIsArray($exchangeInfo);
+        	self::assertArrayHasKey('timezone', $exchangeInfo);
+        	self::assertArrayHasKey('serverTime', $exchangeInfo);
+			self::assertArrayHasKey('rateLimits', $exchangeInfo);
+			self::assertArrayHasKey('symbols', $exchangeInfo);
+		}
     }
 
     /**
@@ -43,13 +43,11 @@ class BinanceTest extends TestCase
      */
     public function testCandles(): void
     {
-        $candles = $this->binance->getCandles('BTCUSDT', Exchange::TIMEFRAME_1h, 500, ['api' => true]);
-        self::assertIsArray($candles);
-        self::assertCount(500, $candles);
-
-        $candles = $this->binance->getCandles('BTCUSDT', Exchange::TIMEFRAME_1h, 500, ['fapi' => true]);
-        self::assertIsArray($candles);
-        self::assertCount(500, $candles);
+		foreach ($this->exchangeTypes as $exchangeType) {
+			$candles = $this->binance->getCandles('BTCUSDT', Exchange::TIMEFRAME_1h, 500, ['type' => $exchangeType]);
+			self::assertIsArray($candles);
+			self::assertCount(500, $candles);
+		}
     }
 
     /**
@@ -57,11 +55,11 @@ class BinanceTest extends TestCase
      */
     public function testAccount(): void
     {
-        $account = $this->binance->getAccount(['api' => true]);
+        $account = $this->binance->getAccount(['type' => 'spot']);
         self::assertIsArray($account);
         self::assertArrayHasKey('makerCommission', $account);
 
-        $account = $this->binance->getAccount(['fapi' => true]);
+        $account = $this->binance->getAccount(['type' => 'future']);
         self::assertIsArray($account);
         self::assertArrayHasKey('feeTier', $account);
     }

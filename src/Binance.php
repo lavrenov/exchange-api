@@ -11,9 +11,9 @@ class Binance extends Exchange
 {
 	public $name = 'Binance';
 
-	protected const API_URL = 'https://api.binance.com/api/v3/';
-	protected const FAPI_URL = 'https://fapi.binance.com/fapi/v1/';
-	protected const STREAM_API_URL = 'wss://stream.binance.com:9443/ws/';
+	protected const SPOT_URL = 'https://api.binance.com/api/v3/';
+	protected const FUTURE_URL = 'https://fapi.binance.com/fapi/v1/';
+	protected const SOCKET_URL = 'wss://stream.binance.com:9443/ws/';
 
 	public static $apiKey;
 	public static $secret;
@@ -119,10 +119,10 @@ class Binance extends Exchange
 				unset($symbol['filters'][$filterId]);
 			}
 
-			$pricePrecision = explode('.', $symbol['filters']['PRICE_FILTER']['tickSize']);
+			$pricePrecision = explode('.', rtrim($symbol['filters']['PRICE_FILTER']['tickSize'], '0'));
 			$pricePrecision = strlen(end($pricePrecision));
 
-			$amountPrecision = explode('.', $symbol['filters']['LOT_SIZE']['stepSize']);
+			$amountPrecision = explode('.', rtrim($symbol['filters']['LOT_SIZE']['stepSize'], '0'));
 			$amountPrecision = strlen(end($amountPrecision));
 
 			$symbols[$symbol['symbol']] = [
@@ -216,7 +216,7 @@ class Binance extends Exchange
 		$uri = strtolower($symbol) . '@kline_' . $timeFrame;
 
 		$this->subscriptions[$uri] = true;
-		connect(self::STREAM_API_URL . $uri)->then(function ($ws) use ($callback, $symbol, $bars, $uri) {
+		connect(self::SOCKET_URL . $uri)->then(function ($ws) use ($callback, $symbol, $bars, $uri) {
 			$ws->on('message', function ($data) use ($ws, $callback, $symbol, $bars, $uri) {
 				if ($this->subscriptions[$uri] === false) {
 					$ws->close();

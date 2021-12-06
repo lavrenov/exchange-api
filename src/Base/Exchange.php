@@ -8,8 +8,8 @@ use Psr\Http\Message\ResponseInterface;
 
 class Exchange extends Singleton
 {
-	protected const API_URL = '';
-	protected const FAPI_URL = '';
+	protected const SPOT_URL = '';
+	protected const FUTURE_URL = '';
 
 	public const TIMEFRAME_1m = '1m';
 	public const TIMEFRAME_5m = '5m';
@@ -70,16 +70,13 @@ class Exchange extends Singleton
 	 */
 	protected function request(string $requestType, string $relativeUri, array $params = [], bool $signed = false): ?string
 	{
-		$baseUri = static::API_URL;
+		$baseUri = static::SPOT_URL;
 
-		if (isset($params['api'])) {
-			unset($params['api']);
-			$baseUri = static::API_URL;
-		}
-
-		if (isset($params['fapi'])) {
-			unset($params['fapi']);
-			$baseUri = static::FAPI_URL;
+		if (isset($params['type'])) {
+			if ($params['type'] === 'future') {
+				$baseUri = static::FUTURE_URL;
+			}
+			unset($params['type']);
 		}
 
 		if ($signed) {
