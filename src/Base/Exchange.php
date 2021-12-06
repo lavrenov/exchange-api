@@ -8,80 +8,86 @@ use Psr\Http\Message\ResponseInterface;
 
 class Exchange extends Singleton
 {
-    protected const API_URL = '';
-    protected const FAPI_URL = '';
+	protected const API_URL = '';
+	protected const FAPI_URL = '';
 
-    /* @var Client */
-    private $client;
+	/* @var Client */
+	private $client;
 
-    /* @var ResponseInterface */
-    private $lastResponse;
+	/* @var ResponseInterface */
+	private $lastResponse;
 
-    private $requestOptions = [];
+	private $requestOptions = [];
 
-    public function init(): void
-    {
-        parent::init();
+	public function init(): void
+	{
+		parent::init();
 
-        $options = [
-            'http_errors' => false,
-        ];
+		$options = [
+			'http_errors' => false,
+		];
 
-        $this->client = new Client($options);
-    }
+		$this->client = new Client($options);
+	}
 
-    /**
-     * @param $option
-     * @param $value
-     */
-    public function setRequestOption($option, $value): void
-    {
-        $this->requestOptions[$option] = $value;
-    }
+	/**
+	 * @param $option
+	 * @param $value
+	 */
+	public function setRequestOption($option, $value): void
+	{
+		$this->requestOptions[$option] = $value;
+	}
 
-    /**
-     * @param string $requestType
-     * @param string $relativeUri
-     * @param array $params
-     * @param bool $signed
-     * @return string
-     * @throws GuzzleException
-     */
-    protected function request(string $requestType, string $relativeUri, array $params = [], bool $signed = false): string
-    {
-        $baseUri = static::API_URL;
+	/**
+	 * @param string $requestType
+	 * @param string $relativeUri
+	 * @param array $params
+	 * @param bool $signed
+	 * @return string|null
+	 */
+	protected function request(string $requestType, string $relativeUri, array $params = [], bool $signed = false): ?string
+	{
+		$baseUri = static::API_URL;
 
-        if (isset($params['fapi'])) {
-            unset($params['fapi']);
-            $baseUri = static::FAPI_URL;
-        }
+		if (isset($params['fapi'])) {
+			unset($params['fapi']);
+			$baseUri = static::FAPI_URL;
+		}
 
-        if ($signed) {
-            $params['timestamp'] = time() * 1000;
-            $params['signature'] = hash_hmac('sha256', http_build_query($params), static::$secret);
-            $this->setRequestOption('headers', ['X-MBX-APIKEY' => static::$apiKey]);
-        }
+		if ($signed) {
+			$params['timestamp'] = time() * 1000;
+			$params['signature'] = hash_hmac('sha256', http_build_query($params), static::$secret);
+			$this->setRequestOption('headers', ['X-MBX-APIKEY' => static::$apiKey]);
+		}
 
-        $uri = $baseUri . $relativeUri;
+		$uri = $baseUri . $relativeUri;
 
-        $options = [
-            'query' => $params
-        ];
+		$options = [
+			'query' => $params
+		];
 
-        if (!empty($this->requestOptions)) {
-            $options = array_merge($options, $this->requestOptions);
-        }
+		if (!empty($this->requestOptions)) {
+			$options = array_merge($options, $this->requestOptions);
+		}
 
-        $this->lastResponse = $this->client->request($requestType, $uri, $options);
+		try {
+			$this->lastResponse = $this->client->request($requestType, $uri, $options);
+			$result = $this->lastResponse->getBody()->getContents();
+			//@codeCoverageIgnoreStart
+		} catch (GuzzleException $e) {
+			$result = null;
+		}
+		//@codeCoverageIgnoreEnd
 
-        return $this->lastResponse->getBody()->getContents();
-    }
+		return $result;
+	}
 
-    /**
-     * @return ResponseInterface|null
-     */
-    public function getLastResponse(): ?ResponseInterface
-    {
-        return $this->lastResponse ?? null;
-    }
+	/**
+	 * @return ResponseInterface|null
+	 */
+	public function getLastResponse(): ?ResponseInterface
+	{
+		return $this->lastResponse ?? null;
+	}
 }
