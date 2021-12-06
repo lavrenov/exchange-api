@@ -76,7 +76,7 @@ class Binance extends Exchange
         $lastResponse = $this->getLastResponse();
         if ($lastResponse === null) {
             //@codeCoverageIgnoreStart
-            return null;
+            throw new Exception('Not Implemented', 501);
             //@codeCoverageIgnoreEnd
         }
 
