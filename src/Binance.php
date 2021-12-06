@@ -166,8 +166,8 @@ class Binance extends Exchange
 		$uri = strtolower($symbol) . '@kline_' . $timeFrame;
 
 		$this->subscriptions[$uri] = true;
-		connect(self::STREAM_API_URL . $uri)->then(function ($ws) use ($callback, $symbol, $bars, $uri) {
-			$ws->on('message', function ($data) use ($ws, $callback, $symbol, $bars, $uri) {
+		connect(self::STREAM_API_URL . $uri)->then(function($ws) use ($callback, $symbol, $bars, $uri) {
+			$ws->on('message', function($data) use ($ws, $callback, $symbol, $bars, $uri) {
 				if ($this->subscriptions[$uri] === false) {
 					$ws->close();
 					return;
