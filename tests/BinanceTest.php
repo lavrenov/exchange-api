@@ -1,5 +1,6 @@
 <?php
 
+use Lavrenov\ExchangeAPI\Base\Exchange;
 use Lavrenov\ExchangeAPI\Binance;
 use PHPUnit\Framework\TestCase;
 
@@ -26,7 +27,7 @@ class BinanceTest extends TestCase
      */
     public function testExchangeInfo(): void
     {
-        $exchangeInfo = $this->binance->getExchangeInfo();
+        $exchangeInfo = $this->binance->getExchangeInfo(['api' => true]);
         self::assertIsArray($exchangeInfo);
         self::assertArrayHasKey('timezone', $exchangeInfo);
         self::assertArrayHasKey('serverTime', $exchangeInfo);
@@ -42,11 +43,11 @@ class BinanceTest extends TestCase
      */
     public function testCandles(): void
     {
-        $candles = $this->binance->getCandles('BTCUSDT', Binance::TIMEFRAME_1h);
+        $candles = $this->binance->getCandles('BTCUSDT', Exchange::TIMEFRAME_1h, 500, ['api' => true]);
         self::assertIsArray($candles);
         self::assertCount(500, $candles);
 
-        $candles = $this->binance->getCandles('BTCUSDT', Binance::TIMEFRAME_1h, 500, ['fapi' => true]);
+        $candles = $this->binance->getCandles('BTCUSDT', Exchange::TIMEFRAME_1h, 500, ['fapi' => true]);
         self::assertIsArray($candles);
         self::assertCount(500, $candles);
     }
@@ -56,7 +57,7 @@ class BinanceTest extends TestCase
      */
     public function testAccount(): void
     {
-        $account = $this->binance->getAccount();
+        $account = $this->binance->getAccount(['api' => true]);
         self::assertIsArray($account);
         self::assertArrayHasKey('makerCommission', $account);
 
@@ -81,4 +82,14 @@ class BinanceTest extends TestCase
         $this->expectException(Exception::class);
         $this->binance->getAccount();
     }
+
+	public function testExchanges(): void
+	{
+		foreach (Exchange::$exchanges as $exchangeId) {
+			$exchangeClass = "\\Lavrenov\\ExchangeAPI\\$exchangeId";
+			$exchange = $exchangeClass::getInstance();
+
+			self::assertEquals($exchange::getClass(), $exchangeId);
+		}
+	}
 }

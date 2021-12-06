@@ -11,6 +11,16 @@ class Exchange extends Singleton
 	protected const API_URL = '';
 	protected const FAPI_URL = '';
 
+	public const TIMEFRAME_1m = '1m';
+	public const TIMEFRAME_5m = '5m';
+	public const TIMEFRAME_15m = '15m';
+	public const TIMEFRAME_30m = '30m';
+	public const TIMEFRAME_1h = '1h';
+	public const TIMEFRAME_4h = '4h';
+	public const TIMEFRAME_1d = '1d';
+	public const TIMEFRAME_1w = '1w';
+	public const TIMEFRAME_1M = '1M';
+
 	/* @var Client */
 	private $client;
 
@@ -18,6 +28,10 @@ class Exchange extends Singleton
 	private $lastResponse;
 
 	private $requestOptions = [];
+
+	public static $exchanges = [
+		'Binance',
+	];
 
 	public function init(): void
 	{
@@ -28,6 +42,14 @@ class Exchange extends Singleton
 		];
 
 		$this->client = new Client($options);
+	}
+
+	/**
+	 * @return string
+	 */
+	public static function getClass(): string
+	{
+		return basename(str_replace('\\', '/', static::class));
 	}
 
 	/**
@@ -49,6 +71,11 @@ class Exchange extends Singleton
 	protected function request(string $requestType, string $relativeUri, array $params = [], bool $signed = false): ?string
 	{
 		$baseUri = static::API_URL;
+
+		if (isset($params['api'])) {
+			unset($params['api']);
+			$baseUri = static::API_URL;
+		}
 
 		if (isset($params['fapi'])) {
 			unset($params['fapi']);
@@ -74,11 +101,9 @@ class Exchange extends Singleton
 		try {
 			$this->lastResponse = $this->client->request($requestType, $uri, $options);
 			$result = $this->lastResponse->getBody()->getContents();
-			//@codeCoverageIgnoreStart
 		} catch (GuzzleException $e) {
 			$result = null;
 		}
-		//@codeCoverageIgnoreEnd
 
 		return $result;
 	}

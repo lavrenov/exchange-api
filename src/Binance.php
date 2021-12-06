@@ -9,28 +9,21 @@ use function Ratchet\Client\connect;
 
 class Binance extends Exchange
 {
+	public $name = 'Binance';
+
 	protected const API_URL = 'https://api.binance.com/api/v3/';
 	protected const FAPI_URL = 'https://fapi.binance.com/fapi/v1/';
 	protected const STREAM_API_URL = 'wss://stream.binance.com:9443/ws/';
 
-	public const TIMEFRAME_1m = '1m';
-	public const TIMEFRAME_3m = '3m';
-	public const TIMEFRAME_5m = '5m';
-	public const TIMEFRAME_15m = '15m';
-	public const TIMEFRAME_30m = '30m';
-	public const TIMEFRAME_1h = '1h';
-	public const TIMEFRAME_2h = '2h';
-	public const TIMEFRAME_4h = '4h';
-	public const TIMEFRAME_6h = '6h';
-	public const TIMEFRAME_8h = '8h';
-	public const TIMEFRAME_12h = '12h';
-	public const TIMEFRAME_1d = '1d';
-	public const TIMEFRAME_3d = '3d';
-	public const TIMEFRAME_1w = '1w';
-	public const TIMEFRAME_1M = '1M';
-
 	public static $apiKey;
 	public static $secret;
+
+	public $intervalLetter = [
+		'SECOND' => 'S',
+		'MINUTE' => 'M',
+		'HOUR' => 'H',
+		'DAY' => 'D'
+	];
 
 	public $subscriptions = [];
 
@@ -75,32 +68,86 @@ class Binance extends Exchange
 	{
 		$lastResponse = $this->getLastResponse();
 		if ($lastResponse === null) {
-			//@codeCoverageIgnoreStart
 			throw new Exception('Not Implemented', 501);
-			//@codeCoverageIgnoreEnd
 		}
 
 		$code = $lastResponse->getStatusCode();
 
 		if ($code === 404) {
-			//@codeCoverageIgnoreStart
 			throw new Exception('Not Found', 404);
-			//@codeCoverageIgnoreEnd
 		}
 
 		try {
 			$result = json_decode($result, true, 512, JSON_THROW_ON_ERROR);
-			//@codeCoverageIgnoreStart
 		} catch (JsonException $e) {
 			throw new Exception($e->getMessage(), $e->getCode());
 		}
-		//@codeCoverageIgnoreEnd
 
 		if ($code >= 400) {
 			throw new Exception($result['msg'], $result['code']);
 		}
 
 		return $result;
+	}
+
+	private function prepareLimits($rateLimits): array
+	{
+		foreach ($rateLimits as $key => $rateLimit) {
+			if (!in_array($rateLimit['rateLimitType'], ['REQUEST_WEIGHT', 'ORDERS'])) {
+				unset($rateLimits[$key]);
+				continue;
+			}
+			if ($rateLimit['rateLimitType'] === 'REQUEST_WEIGHT') {
+				$rateLimit['rateLimitType'] = 'USED-WEIGHT';
+			}
+			if ($rateLimit['rateLimitType'] === 'ORDERS') {
+				$rateLimit['rateLimitType'] = 'ORDER-COUNT';
+			}
+			$rateLimits[$rateLimit['rateLimitType'] . '-' . $rateLimit['intervalNum'] . $this->intervalLetter[$rateLimit['interval']]] = $rateLimit['limit'];
+			unset($rateLimits[$key]);
+		}
+		ksort($rateLimits);
+
+		return $rateLimits;
+	}
+
+	private function prepareSymbols($symbols): array
+	{
+		foreach ($symbols as $symbolId => $symbol) {
+			foreach ($symbol['filters'] as $filterId => $filter) {
+				$symbol['filters'][$filter['filterType']] = $filter;
+				unset($symbol['filters'][$filterId]);
+			}
+
+			$pricePrecision = explode('.', $symbol['filters']['PRICE_FILTER']['tickSize']);
+			$pricePrecision = strlen(end($pricePrecision));
+
+			$amountPrecision = explode('.', $symbol['filters']['LOT_SIZE']['stepSize']);
+			$amountPrecision = strlen(end($amountPrecision));
+
+			$symbols[$symbol['symbol']] = [
+				'id' => $symbol['symbol'],
+				'name' => $symbol['baseAsset'] . '/' . $symbol['quoteAsset'],
+				'precision' => [
+					'amount' => $amountPrecision,
+					'price' => $pricePrecision,
+				],
+				'limits' => [
+					'amount' => [
+						'min' => $symbol['filters']['LOT_SIZE']['minQty'] ?? 0,
+						'max' => $symbol['filters']['LOT_SIZE']['maxQty'] ?? 0,
+					],
+					'cost' => [
+						'min' => $symbol['filters']['MIN_NOTIONAL']['minNotional'] ?? $symbol['filters']['MIN_NOTIONAL']['notional'] ?? 0,
+					],
+				],
+				'active' => $symbol['status'] === 'TRADING',
+			];
+			unset($symbols[$symbolId]);
+		}
+		ksort($symbols);
+
+		return $symbols;
 	}
 
 	/**
@@ -113,8 +160,11 @@ class Binance extends Exchange
 		$uri = 'exchangeInfo';
 
 		$result = $this->request('GET', $uri, $params);
+		$result = $this->parseResult($result);
+		$result['rateLimits'] = $this->prepareLimits($result['rateLimits']);
+		$result['symbols'] = $this->prepareSymbols($result['symbols']);
 
-		return $this->parseResult($result);
+		return $result;
 	}
 
 	/**
@@ -166,8 +216,8 @@ class Binance extends Exchange
 		$uri = strtolower($symbol) . '@kline_' . $timeFrame;
 
 		$this->subscriptions[$uri] = true;
-		connect(self::STREAM_API_URL . $uri)->then(function($ws) use ($callback, $symbol, $bars, $uri) {
-			$ws->on('message', function($data) use ($ws, $callback, $symbol, $bars, $uri) {
+		connect(self::STREAM_API_URL . $uri)->then(function ($ws) use ($callback, $symbol, $bars, $uri) {
+			$ws->on('message', function ($data) use ($ws, $callback, $symbol, $bars, $uri) {
 				if ($this->subscriptions[$uri] === false) {
 					$ws->close();
 					return;
