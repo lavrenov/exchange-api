@@ -245,6 +245,7 @@ class Binance extends Exchange
 	 * @param $symbol
 	 * @param $timeFrame
 	 * @param callable $callback
+	 * @return void
 	 * @codeCoverageIgnore
 	 */
 	public function subscribeCandle($symbol, $timeFrame, callable $callback): void
@@ -254,12 +255,24 @@ class Binance extends Exchange
 		$this->socketConnect($uri, $callback);
 	}
 
+	/**
+	 * @param $symbol
+	 * @param $timeFrame
+	 * @return void
+	 * @codeCoverageIgnore
+	 */
 	public function unsubscribeCandle($symbol, $timeFrame): void
 	{
 		$uri = strtolower($symbol) . '@kline_' . $timeFrame;
 		$this->subscriptions[$uri] = false;
 	}
 
+	/**
+	 * @param $uri
+	 * @param $callback
+	 * @return void
+	 * @codeCoverageIgnore
+	 */
 	private function socketConnect($uri, $callback): void
 	{
 		connect(self::SOCKET_URL . $uri)->then(function ($ws) use ($callback, $uri) {
