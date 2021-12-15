@@ -156,16 +156,17 @@ class Binance extends Exchange
 	 */
 	public function prepareOrder($order): array
 	{
-		$id = $order['orderId'];
+		$id = $order['orderId'] ?? 0;
 		$datetime = $this->iso8601($order['time'] ?? $order['transactTime'] ?? $order['updateTime'] ?? null);
-		$symbol = $order['symbol'];
-		$type = strtolower($order['type']);
-		$side = strtolower($order['side']);
+		$symbol = $order['symbol'] ?? '';
+		$type = strtolower($order['type'] ?? '');
+		$side = strtolower($order['side'] ?? '');
 		$price = $order['price'] ?? 0;
 		$amount = $order['executedQty'] ?? $order['origQty'] ?? 0;
 		$cost = $order['cumBase'] ?? $order['cummulativeQuoteQty'] ?? $order['cumQuote'] ?? 0;
-		$status = strtolower($order['status']);
-		$price = $price > 0 ? $price : $cost / $amount;
+		$status = strtolower($order['status'] ?? '');
+		$calcPrice = $amount > 0 ? $cost / $amount : 0;
+		$price = $price > 0 ? $price : $calcPrice;
 
 		return [
 			'id' => $id,
