@@ -18,14 +18,14 @@ class Binance extends Exchange
 	public static $apiKey;
 	public static $secret;
 
-	public $intervalLetter = [
+	private $subscriptions = [];
+
+	private $intervalLetter = [
 		'SECOND' => 'S',
 		'MINUTE' => 'M',
 		'HOUR' => 'H',
 		'DAY' => 'D'
 	];
-
-	public $subscriptions = [];
 
 	/**
 	 * @return int
@@ -158,7 +158,6 @@ class Binance extends Exchange
 	public function getExchangeInfo(array $params = []): array
 	{
 		$uri = 'exchangeInfo';
-
 		$result = $this->request('GET', $uri, $params);
 		$result = $this->parseResult($result);
 		$result['rateLimits'] = $this->prepareLimits($result['rateLimits']);
@@ -178,13 +177,11 @@ class Binance extends Exchange
 	public function getCandles($symbol, $timeFrame, int $limit = 500, array $params = []): array
 	{
 		$uri = 'klines';
-
 		$params = array_merge([
 			'symbol' => $symbol,
 			'interval' => $timeFrame,
 			'limit' => $limit,
 		], $params);
-
 		$result = $this->request('GET', $uri, $params);
 
 		return $this->parseResult($result);
@@ -198,7 +195,6 @@ class Binance extends Exchange
 	public function getAccount(array $params = []): array
 	{
 		$uri = 'account';
-
 		$result = $this->request('GET', $uri, $params, true);
 
 		return $this->parseResult($result);
@@ -206,25 +202,75 @@ class Binance extends Exchange
 
 	/**
 	 * @param $symbol
+	 * @param $orderId
+	 * @param array $params
+	 * @return array
+	 * @throws Exception
+	 */
+	public function getOrder($symbol, $orderId, array $params = []): array
+	{
+		$uri = 'order';
+		$params = array_merge([
+			'symbol' => $symbol,
+			'orderId' => $orderId,
+		], $params);
+		$result = $this->request('GET', $uri, $params, true);
+		$result = $this->parseResult($result);
+
+		$id = $result['orderId'];
+		$datetime = $this->iso8601($result['time'] ?? $result['transactTime'] ?? $result['updateTime'] ?? null);
+		$symbol = $result['symbol'];
+		$type = strtolower($result['type']);
+		$side = strtolower($result['side']);
+		$price = $result['price'] ?? 0;
+		$amount = $result['executedQty'] ?? $result['origQty'] ?? 0;
+		$cost = $result['cumBase'] ?? $result['cummulativeQuoteQty'] ?? $result['cumQuote'] ?? 0;
+		$status = strtolower($result['status']);
+		$price = $price > 0 ? $price : $cost / $amount;
+
+		return [
+			'id' => $id,
+			'datetime' => $datetime,
+			'symbol' => $symbol,
+			'type' => $type,
+			'side' => $side,
+			'price' => $price,
+			'amount' => $amount,
+			'cost' => $cost,
+			'status' => $status === 'filled' ? 'closed' : $status,
+		];
+	}
+
+	/**
+	 * @param $symbol
 	 * @param $timeFrame
-	 * @param $bars
 	 * @param callable $callback
 	 * @codeCoverageIgnore
 	 */
-	public function candle($symbol, $timeFrame, $bars, callable $callback): void
+	public function subscribeCandle($symbol, $timeFrame, callable $callback): void
 	{
 		$uri = strtolower($symbol) . '@kline_' . $timeFrame;
-
 		$this->subscriptions[$uri] = true;
-		connect(self::SOCKET_URL . $uri)->then(function ($ws) use ($callback, $symbol, $bars, $uri) {
-			$ws->on('message', function ($data) use ($ws, $callback, $symbol, $bars, $uri) {
+		$this->socketConnect($uri, $callback);
+	}
+
+	public function unsubscribeCandle($symbol, $timeFrame): void
+	{
+		$uri = strtolower($symbol) . '@kline_' . $timeFrame;
+		$this->subscriptions[$uri] = false;
+	}
+
+	private function socketConnect($uri, $callback): void
+	{
+		connect(self::SOCKET_URL . $uri)->then(function ($ws) use ($callback, $uri) {
+			$ws->on('message', function ($data) use ($ws, $callback, $uri) {
 				if ($this->subscriptions[$uri] === false) {
 					$ws->close();
 					return;
 				}
 				$data = json_decode((string)$data, true, 512, JSON_THROW_ON_ERROR);
 				if ($callback) {
-					$callback($symbol, $bars, $data);
+					$callback($data);
 				}
 			});
 		});
