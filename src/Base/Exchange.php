@@ -112,4 +112,20 @@ class Exchange extends Singleton
 	{
 		return $this->lastResponse ?? null;
 	}
+
+	public function iso8601($timestamp = null) {
+		if (!isset($timestamp)) {
+			return null;
+		}
+		if (!is_numeric($timestamp) || (int)$timestamp !== $timestamp) {
+			return null;
+		}
+		if ($timestamp < 0) {
+			return null;
+		}
+		$result = gmdate('c', (int) floor($timestamp / 1000));
+		$microSecond = (int) $timestamp % 1000;
+
+		return str_replace('+00:00', sprintf('.%03dZ', $microSecond), $result);
+	}
 }

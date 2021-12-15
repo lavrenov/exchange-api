@@ -86,8 +86,19 @@ class BinanceTest extends TestCase
 		foreach (Exchange::$exchanges as $exchangeId) {
 			$exchangeClass = "\\Lavrenov\\ExchangeAPI\\$exchangeId";
 			$exchange = $exchangeClass::getInstance();
-
 			self::assertEquals($exchange::getClass(), $exchangeId);
 		}
+	}
+
+	/**
+	 * @throws Exception
+	 */
+	public function testOrder(): void
+	{
+		$order = $this->binance->getOrder('BTCUSDT', '8587891223', ['type' => 'spot']);
+		self::assertIsArray($order);
+		self::assertEquals('BTCUSDT', $order['symbol']);
+		self::assertEquals('buy', $order['side']);
+		self::assertEquals('closed', $order['status']);
 	}
 }
