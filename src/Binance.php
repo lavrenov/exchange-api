@@ -151,6 +151,36 @@ class Binance extends Exchange
 	}
 
 	/**
+	 * @param $order
+	 * @return array
+	 */
+	public function prepareOrder($order): array
+	{
+		$id = $order['orderId'];
+		$datetime = $this->iso8601($order['time'] ?? $order['transactTime'] ?? $order['updateTime'] ?? null);
+		$symbol = $order['symbol'];
+		$type = strtolower($order['type']);
+		$side = strtolower($order['side']);
+		$price = $order['price'] ?? 0;
+		$amount = $order['executedQty'] ?? $order['origQty'] ?? 0;
+		$cost = $order['cumBase'] ?? $order['cummulativeQuoteQty'] ?? $order['cumQuote'] ?? 0;
+		$status = strtolower($order['status']);
+		$price = $price > 0 ? $price : $cost / $amount;
+
+		return [
+			'id' => $id,
+			'datetime' => $datetime,
+			'symbol' => $symbol,
+			'type' => $type,
+			'side' => $side,
+			'price' => $price,
+			'amount' => $amount,
+			'cost' => $cost,
+			'status' => $status === 'filled' ? 'closed' : $status,
+		];
+	}
+
+	/**
 	 * @param array $params
 	 * @return array
 	 * @throws Exception
@@ -217,28 +247,31 @@ class Binance extends Exchange
 		$result = $this->request('GET', $uri, $params, true);
 		$result = $this->parseResult($result);
 
-		$id = $result['orderId'];
-		$datetime = $this->iso8601($result['time'] ?? $result['transactTime'] ?? $result['updateTime'] ?? null);
-		$symbol = $result['symbol'];
-		$type = strtolower($result['type']);
-		$side = strtolower($result['side']);
-		$price = $result['price'] ?? 0;
-		$amount = $result['executedQty'] ?? $result['origQty'] ?? 0;
-		$cost = $result['cumBase'] ?? $result['cummulativeQuoteQty'] ?? $result['cumQuote'] ?? 0;
-		$status = strtolower($result['status']);
-		$price = $price > 0 ? $price : $cost / $amount;
+		return $this->prepareOrder($result);
+	}
 
-		return [
-			'id' => $id,
-			'datetime' => $datetime,
+	/**
+	 * @param $symbol
+	 * @param $side
+	 * @param $amount
+	 * @param string $type
+	 * @param array $params
+	 * @return array
+	 * @throws Exception
+	 */
+	public function createOrder($symbol, $side, $amount, string $type = 'market', array $params = []): array
+	{
+		$uri = 'order';
+		$params = array_merge([
 			'symbol' => $symbol,
-			'type' => $type,
 			'side' => $side,
-			'price' => $price,
-			'amount' => $amount,
-			'cost' => $cost,
-			'status' => $status === 'filled' ? 'closed' : $status,
-		];
+			'type' => $type,
+			'quantity' => $amount,
+		], $params);
+		$result = $this->request('POST', $uri, $params, true);
+		$result = $this->parseResult($result);
+
+		return $this->prepareOrder($result);
 	}
 
 	/**
