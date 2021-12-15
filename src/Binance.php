@@ -2,9 +2,9 @@
 
 namespace Lavrenov\ExchangeAPI;
 
-use Exception;
 use JsonException;
 use Lavrenov\ExchangeAPI\Base\Exchange;
+use Lavrenov\ExchangeAPI\Base\ExchangeException;
 use function Ratchet\Client\connect;
 
 class Binance extends Exchange
@@ -62,29 +62,31 @@ class Binance extends Exchange
 	}
 
 	/**
-	 * @throws Exception
+	 * @param $result
+	 * @return array
+	 * @throws ExchangeException
 	 */
-	private function parseResult($result)
+	private function parseResult($result): array
 	{
 		$lastResponse = $this->getLastResponse();
 		if ($lastResponse === null) {
-			throw new Exception('Not Implemented', 501);
+			throw new ExchangeException('Not Implemented', 501);
 		}
 
 		$code = $lastResponse->getStatusCode();
 
 		if ($code === 404) {
-			throw new Exception('Not Found', 404);
+			throw new ExchangeException('Not Found', 404);
 		}
 
 		try {
 			$result = json_decode($result, true, 512, JSON_THROW_ON_ERROR);
 		} catch (JsonException $e) {
-			throw new Exception($e->getMessage(), $e->getCode());
+			throw new ExchangeException($e->getMessage(), $e->getCode());
 		}
 
 		if ($code >= 400) {
-			throw new Exception($result['msg'], $result['code']);
+			throw new ExchangeException($result['msg'], $result['code']);
 		}
 
 		return $result;
@@ -184,7 +186,7 @@ class Binance extends Exchange
 	/**
 	 * @param array $params
 	 * @return array
-	 * @throws Exception
+	 * @throws ExchangeException
 	 */
 	public function getExchangeInfo(array $params = []): array
 	{
@@ -203,7 +205,7 @@ class Binance extends Exchange
 	 * @param int $limit
 	 * @param array $params
 	 * @return array
-	 * @throws Exception
+	 * @throws ExchangeException
 	 */
 	public function getCandles($symbol, $timeFrame, int $limit = 500, array $params = []): array
 	{
@@ -221,7 +223,7 @@ class Binance extends Exchange
 	/**
 	 * @param array $params
 	 * @return array
-	 * @throws Exception
+	 * @throws ExchangeException
 	 */
 	public function getAccount(array $params = []): array
 	{
@@ -236,7 +238,7 @@ class Binance extends Exchange
 	 * @param $orderId
 	 * @param array $params
 	 * @return array
-	 * @throws Exception
+	 * @throws ExchangeException
 	 */
 	public function getOrder($symbol, $orderId, array $params = []): array
 	{
@@ -258,7 +260,7 @@ class Binance extends Exchange
 	 * @param string $type
 	 * @param array $params
 	 * @return array
-	 * @throws Exception
+	 * @throws ExchangeException
 	 */
 	public function createOrder($symbol, $side, $amount, string $type = 'market', array $params = []): array
 	{
