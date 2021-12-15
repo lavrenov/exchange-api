@@ -72,11 +72,11 @@ class Exchange extends Singleton
 	{
 		$baseUri = static::SPOT_URL;
 
-		if (isset($params['type'])) {
-			if ($params['type'] === 'future') {
+		if (isset($params['exchangeType'])) {
+			if ($params['exchangeType'] === 'future') {
 				$baseUri = static::FUTURE_URL;
 			}
-			unset($params['type']);
+			unset($params['exchangeType']);
 		}
 
 		if ($signed) {

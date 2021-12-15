@@ -29,7 +29,7 @@ class BinanceTest extends TestCase
     public function testExchangeInfo(): void
     {
 		foreach ($this->exchangeTypes as $exchangeType) {
-        	$exchangeInfo = $this->binance->getExchangeInfo(['type' => $exchangeType]);
+        	$exchangeInfo = $this->binance->getExchangeInfo(['exchangeType' => $exchangeType]);
         	self::assertIsArray($exchangeInfo);
         	self::assertArrayHasKey('timezone', $exchangeInfo);
         	self::assertArrayHasKey('serverTime', $exchangeInfo);
@@ -44,7 +44,7 @@ class BinanceTest extends TestCase
     public function testCandles(): void
     {
 		foreach ($this->exchangeTypes as $exchangeType) {
-			$candles = $this->binance->getCandles('BTCUSDT', Exchange::TIMEFRAME_1h, 500, ['type' => $exchangeType]);
+			$candles = $this->binance->getCandles('BTCUSDT', Exchange::TIMEFRAME_1h, 500, ['exchangeType' => $exchangeType]);
 			self::assertIsArray($candles);
 			self::assertCount(500, $candles);
 		}
@@ -55,11 +55,11 @@ class BinanceTest extends TestCase
      */
     public function testAccount(): void
     {
-        $account = $this->binance->getAccount(['type' => 'spot']);
+        $account = $this->binance->getAccount(['exchangeType' => 'spot']);
         self::assertIsArray($account);
         self::assertArrayHasKey('makerCommission', $account);
 
-        $account = $this->binance->getAccount(['type' => 'future']);
+        $account = $this->binance->getAccount(['exchangeType' => 'future']);
         self::assertIsArray($account);
         self::assertArrayHasKey('feeTier', $account);
     }
@@ -95,7 +95,7 @@ class BinanceTest extends TestCase
 	 */
 	public function testOrder(): void
 	{
-		$order = $this->binance->getOrder('BTCUSDT', '8587891223', ['type' => 'spot']);
+		$order = $this->binance->getOrder('BTCUSDT', '8587891223', ['exchangeType' => 'spot']);
 		self::assertIsArray($order);
 		self::assertEquals('BTCUSDT', $order['symbol']);
 		self::assertEquals('buy', $order['side']);
